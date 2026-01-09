@@ -3,6 +3,7 @@ import {
   Column,
   Index,
   OneToMany,
+  OneToOne,
   JoinColumn,
   BeforeInsert,
   BeforeUpdate,
@@ -13,95 +14,86 @@ import {
   BloodType,
   PatientStatus,
   Address,
-  MedicalAid,
-  EmergencyContact,
 } from '@ithalamed/common';
+import { User } from '../auth/user.entity';
 import { PatientConsent } from './patient-consent. entity';
 import { PatientDocument } from './patient-document.entity';
-import { PatientAllergy } from './patient-allergy.entity';
-import { PatientCondition } from './patient-condition. entity';
+import { PatientMedicalAid } from './patient-medical-aid.entity';
 import { PatientEmergencyContact } from './patient-emergency-contact.entity';
+import { PatientAllergy } from './patient-allergy.entity';
+import { PatientChronicCondition } from './patient-condition.entity';
 
 /**
  * Patient Entity
  * 
- * Core entity representing a patient in the IthalaMed system. 
- * Implements FR-PAT-001 through FR-PAT-009 from the FRD. 
- * 
- * Features:
- * - Unique patient number generation
- * - South African ID number validation and storage (encrypted)
- * - Medical aid integration
- * - Emergency contact management (minimum 2 required)
- * - Guardian/Dependent relationships
- * - Consent management
+ * Core patient demographics and profile information.
+ * Implements FR-PAT-001 through FR-PAT-010 requirements.
  */
 @Entity('patients')
 @Index(['patientNumber'], { unique: true })
 @Index(['idNumber'], { unique: true })
-@Index(['userId'], { unique:  true, where: '"user_id" IS NOT NULL' })
+@Index(['userId'], { unique: true, where: '"user_id" IS NOT NULL' })
 @Index(['status'])
 @Index(['lastName', 'firstName'])
 @Index(['phoneNumber'])
-@Index(['email'], { where: '"email" IS NOT NULL' })
+@Index(['email'])
+@Index(['dateOfBirth'])
 export class Patient extends AuditableEntity {
   /**
-   * System-generated unique patient number
+   * System-generated patient number
    * Format: PT{YEAR}{SEQUENCE} e.g., PT2024000001
    */
   @Column({
     name: 'patient_number',
-    type: 'varchar',
-    length: 20,
+    type:  'varchar',
+    length:  20,
     unique: true,
   })
   patientNumber: string;
 
   /**
-   * Reference to user account for app access
-   * Nullable for patients registered by providers without app access
+   * Reference to user account (nullable for patients without app access)
    */
   @Column({
     name: 'user_id',
-    type:  'uuid',
-    nullable:  true,
+    type: 'uuid',
+    nullable: true,
   })
   userId: string | null;
 
   /**
-   * Patient's first/given name
+   * First name
    */
   @Column({
     name: 'first_name',
-    type:  'varchar',
-    length:  100,
+    type: 'varchar',
+    length: 100,
   })
   firstName: string;
 
   /**
-   * Patient's middle name(s)
+   * Middle name
    */
   @Column({
     name: 'middle_name',
-    type:  'varchar',
-    length:  100,
+    type: 'varchar',
+    length: 100,
     nullable: true,
   })
   middleName: string | null;
 
   /**
-   * Patient's last/family name
+   * Last name
    */
   @Column({
     name: 'last_name',
-    type:  'varchar',
-    length:  100,
+    type: 'varchar',
+    length: 100,
   })
   lastName: string;
 
   /**
-   * Encrypted South African ID number or passport number
-   * Encrypted using AES-256 at application level
+   * ID number (encrypted) - SA ID or Passport
    */
   @Column({
     name: 'id_number',
@@ -112,7 +104,7 @@ export class Patient extends AuditableEntity {
   idNumber: string;
 
   /**
-   * Type of identification document
+   * ID type
    */
   @Column({
     name: 'id_type',
@@ -123,16 +115,27 @@ export class Patient extends AuditableEntity {
   idType: 'sa_id' | 'passport' | 'other';
 
   /**
-   * Patient's date of birth
+   * Country of ID issue (for passports)
    */
   @Column({
-    name:  'date_of_birth',
+    name: 'id_country',
+    type:  'varchar',
+    length:  2,
+    default: 'ZA',
+  })
+  idCountry: string;
+
+  /**
+   * Date of birth
+   */
+  @Column({
+    name: 'date_of_birth',
     type: 'date',
   })
   dateOfBirth: Date;
 
   /**
-   * Patient's gender
+   * Gender
    */
   @Column({
     name: 'gender',
@@ -142,18 +145,18 @@ export class Patient extends AuditableEntity {
   gender: Gender;
 
   /**
-   * Patient's blood type (if known)
+   * Blood type
    */
   @Column({
     name: 'blood_type',
-    type:  'enum',
-    enum:  BloodType,
-    nullable:  true,
+    type: 'enum',
+    enum: BloodType,
+    nullable: true,
   })
   bloodType: BloodType | null;
 
   /**
-   * Primary contact phone number (E.164 format)
+   * Phone number (E.164 format)
    */
   @Column({
     name: 'phone_number',
@@ -185,7 +188,7 @@ export class Patient extends AuditableEntity {
   email: string | null;
 
   /**
-   * Physical address stored as JSONB
+   * Physical address
    */
   @Column({
     name: 'address',
@@ -195,34 +198,81 @@ export class Patient extends AuditableEntity {
   address: Address | null;
 
   /**
-   * Medical aid/insurance information
+   * Preferred language (ISO 639-1)
    */
   @Column({
-    name: 'medical_aid',
-    type: 'jsonb',
-    nullable:  true,
+    name: 'preferred_language',
+    type: 'varchar',
+    length: 10,
+    default: 'en',
   })
-  medicalAid: MedicalAid | null;
+  preferredLanguage: string;
 
   /**
-   * Whether medical aid has been verified
+   * Nationality (ISO 3166-1 alpha-2)
    */
   @Column({
-    name: 'medical_aid_verified',
-    type: 'boolean',
-    default: false,
+    name: 'nationality',
+    type: 'varchar',
+    length: 2,
+    default: 'ZA',
   })
-  medicalAidVerified: boolean;
+  nationality: string;
 
   /**
-   * Date of medical aid verification
+   * Ethnicity (optional, for demographic purposes)
    */
   @Column({
-    name: 'medical_aid_verified_at',
-    type: 'timestamp with time zone',
+    name: 'ethnicity',
+    type:  'varchar',
+    length:  100,
     nullable: true,
   })
-  medicalAidVerifiedAt: Date | null;
+  ethnicity: string | null;
+
+  /**
+   * Religion (optional, for dietary/cultural considerations)
+   */
+  @Column({
+    name: 'religion',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  religion: string | null;
+
+  /**
+   * Occupation
+   */
+  @Column({
+    name: 'occupation',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  occupation: string | null;
+
+  /**
+   * Employer name
+   */
+  @Column({
+    name: 'employer',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  employer: string | null;
+
+  /**
+   * Marital status
+   */
+  @Column({
+    name: 'marital_status',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
+  maritalStatus: 'single' | 'married' | 'divorced' | 'widowed' | 'separated' | 'domestic_partnership' | null;
 
   /**
    * Profile photo URL
@@ -236,29 +286,28 @@ export class Patient extends AuditableEntity {
   profilePhotoUrl: string | null;
 
   /**
-   * Preferred language (ISO 639-1 code)
-   */
-  @Column({
-    name: 'preferred_language',
-    type: 'varchar',
-    length: 10,
-    default: 'en',
-  })
-  preferredLanguage: string;
-
-  /**
    * Patient status
    */
   @Column({
     name: 'status',
     type: 'enum',
     enum: PatientStatus,
-    default: PatientStatus. ACTIVE,
+    default: PatientStatus.ACTIVE,
   })
   status: PatientStatus;
 
   /**
-   * Whether patient is a minor (under 18)
+   * Deceased date (if applicable)
+   */
+  @Column({
+    name: 'deceased_date',
+    type: 'date',
+    nullable: true,
+  })
+  deceasedDate: Date | null;
+
+  /**
+   * Is minor (under 18)
    */
   @Column({
     name:  'is_minor',
@@ -268,24 +317,24 @@ export class Patient extends AuditableEntity {
   isMinor: boolean;
 
   /**
-   * Guardian's patient ID (for minors)
+   * Requires guardian (for minors or incapacitated adults)
    */
   @Column({
-    name: 'guardian_patient_id',
-    type: 'uuid',
-    nullable: true,
+    name: 'requires_guardian',
+    type: 'boolean',
+    default: false,
   })
-  guardianPatientId: string | null;
+  requiresGuardian: boolean;
 
   /**
-   * Date of last visit/encounter
+   * Additional notes
    */
   @Column({
-    name: 'last_visit_at',
-    type: 'timestamp with time zone',
-    nullable:  true,
+    name: 'notes',
+    type: 'text',
+    nullable: true,
   })
-  lastVisitAt: Date | null;
+  notes: string | null;
 
   /**
    * Additional metadata
@@ -300,35 +349,16 @@ export class Patient extends AuditableEntity {
   // ==================== RELATIONSHIPS ====================
 
   /**
-   * Patient's allergies
+   * User account (if registered)
    */
-  @OneToMany(() => PatientAllergy, allergy => allergy.patient, {
-    cascade: ['insert', 'update'],
-  })
-  allergies: PatientAllergy[];
-
-  /**
-   * Patient's chronic conditions
-   */
-  @OneToMany(() => PatientCondition, condition => condition.patient, {
-    cascade: ['insert', 'update'],
-  })
-  conditions: PatientCondition[];
-
-  /**
-   * Emergency contacts (minimum 2 required)
-   */
-  @OneToMany(() => PatientEmergencyContact, contact => contact.patient, {
-    cascade: ['insert', 'update'],
-  })
-  emergencyContacts: PatientEmergencyContact[];
+  @OneToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'user_id' })
+  user: User | null;
 
   /**
    * Patient consents
    */
-  @OneToMany(() => PatientConsent, consent => consent.patient, {
-    cascade: ['insert', 'update'],
-  })
+  @OneToMany(() => PatientConsent, consent => consent.patient)
   consents: PatientConsent[];
 
   /**
@@ -337,29 +367,51 @@ export class Patient extends AuditableEntity {
   @OneToMany(() => PatientDocument, document => document.patient)
   documents: PatientDocument[];
 
+  /**
+   * Medical aid memberships
+   */
+  @OneToMany(() => PatientMedicalAid, medicalAid => medicalAid.patient)
+  medicalAids: PatientMedicalAid[];
+
+  /**
+   * Emergency contacts
+   */
+  @OneToMany(() => PatientEmergencyContact, contact => contact.patient)
+  emergencyContacts: PatientEmergencyContact[];
+
+  /**
+   * Allergies
+   */
+  @OneToMany(() => PatientAllergy, allergy => allergy.patient)
+  allergies: PatientAllergy[];
+
+  /**
+   * Chronic conditions
+   */
+  @OneToMany(() => PatientChronicCondition, condition => condition.patient)
+  chronicConditions: PatientChronicCondition[];
+
   // ==================== HOOKS ====================
 
   @BeforeInsert()
   @BeforeUpdate()
-  normalizeData() {
-    // Normalize email to lowercase
-    if (this.email) {
-      this.email = this.email. toLowerCase().trim();
+  updateDerivedFields() {
+    // Calculate if patient is a minor
+    if (this.dateOfBirth) {
+      const age = this.calculateAge();
+      this.isMinor = age < 18;
+      this.requiresGuardian = age < 18;
     }
 
-    // Normalize names to title case
+    // Normalize data
+    if (this.email) {
+      this.email = this.email.toLowerCase().trim();
+    }
     if (this.firstName) {
       this.firstName = this.firstName.trim();
     }
     if (this.lastName) {
       this.lastName = this.lastName.trim();
-    }
-
-    // Update isMinor based on date of birth
-    if (this.dateOfBirth) {
-      const today = new Date();
-      const age = today.getFullYear() - new Date(this.dateOfBirth).getFullYear();
-      this.isMinor = age < 18;
     }
   }
 
@@ -378,41 +430,41 @@ export class Patient extends AuditableEntity {
   }
 
   /**
-   * Get formatted name (Last, First Middle)
+   * Calculate age in years
    */
-  getFormattedName(): string {
-    let name = `${this.lastName}, ${this. firstName}`;
-    if (this.middleName) {
-      name += ` ${this.middleName}`;
-    }
-    return name;
-  }
-
-  /**
-   * Calculate current age
-   */
-  getAge(): number {
+  calculateAge(): number {
+    if (!this.dateOfBirth) return 0;
+    
     const today = new Date();
     const birthDate = new Date(this.dateOfBirth);
     let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today. getMonth() - birthDate.getMonth();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
       age--;
     }
+    
     return age;
+  }
+
+  /**
+   * Check if patient is a minor
+   */
+  checkIsMinor(): boolean {
+    return this.calculateAge() < 18;
   }
 
   /**
    * Check if patient is active
    */
   isActive(): boolean {
-    return this.status === PatientStatus.ACTIVE;
+    return this.status === PatientStatus. ACTIVE;
   }
 
   /**
-   * Check if patient has valid medical aid
+   * Check if patient is deceased
    */
-  hasMedicalAid(): boolean {
-    return this.medicalAid !== null && this.medicalAidVerified;
+  isDeceased(): boolean {
+    return this.status === PatientStatus.DECEASED || this.deceasedDate !== null;
   }
 }
