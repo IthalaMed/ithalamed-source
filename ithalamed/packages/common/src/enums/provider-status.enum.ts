@@ -16,4 +16,6 @@ export enum ProviderStatus {
   
   /** Provider has retired */
   RETIRED = 'retired',
+
+  ON_LEAVE = 'on_leave',
 }
