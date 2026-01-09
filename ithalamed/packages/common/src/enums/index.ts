@@ -7,7 +7,7 @@ export * from './patient-status.enum';
 export * from './provider-type.enum';
 export * from './provider-status.enum';
 export * from './appointment-status.enum';
-export * from './appointment-type.enum';
+export * from './appointment-type';
 export * from './prescription-status.enum';
 export * from './order-priority.enum';
 export * from './triage-level.enum';
