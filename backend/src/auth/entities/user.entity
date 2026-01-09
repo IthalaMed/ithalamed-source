@@ -1,0 +1,127 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+  Index,
+  OneToMany,
+} from 'typeorm';
+import { Session } from './session. entity';
+import { RefreshToken } from './refresh-token.entity';
+
+export enum UserType {
+  PATIENT = 'patient',
+  PROVIDER = 'provider',
+  PHARMACIST = 'pharmacist',
+  LAB_TECHNICIAN = 'lab_technician',
+  EMS = 'ems',
+  FACILITY_ADMIN = 'facility_admin',
+  SYSTEM_ADMIN = 'system_admin',
+}
+
+export enum UserStatus {
+  PENDING_VERIFICATION = 'pending_verification',
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  LOCKED = 'locked',
+  SUSPENDED = 'suspended',
+}
+
+export enum MfaMethod {
+  NONE = 'none',
+  TOTP = 'totp',
+  SMS = 'sms',
+  EMAIL = 'email',
+}
+
+@Entity({ name: 'users' })
+@Index(['email'], { unique: true })
+@Index(['phoneNumber'], { unique:  true })
+export class User {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ unique: true })
+  email: string;
+
+  @Column({ unique: true })
+  phoneNumber: string;
+
+  @Column()
+  passwordHash: string;
+
+  @Column({ nullable: true })
+  pinHash: string;
+
+  @Column()
+  firstName: string;
+
+  @Column()
+  lastName: string;
+
+  @Column({ type: 'date', nullable: true })
+  dateOfBirth:  Date;
+
+  @Column({ nullable: true })
+  idNumber: string;
+
+  @Column({ type: 'enum', enum: UserType })
+  userType:  UserType;
+
+  @Column({ type:  'enum', enum: UserStatus, default: UserStatus. PENDING_VERIFICATION })
+  status: UserStatus;
+
+  @Column({ default: false })
+  emailVerified: boolean;
+
+  @Column({ default: false })
+  phoneVerified: boolean;
+
+  @Column({ type: 'enum', enum: MfaMethod, default: MfaMethod.NONE })
+  mfaMethod: MfaMethod;
+
+  @Column({ nullable: true })
+  mfaSecret: string;
+
+  @Column({ type: 'simple-array', nullable: true })
+  mfaBackupCodes: string[];
+
+  @Column({ default: 0 })
+  failedLoginAttempts: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lockedUntil:  Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastLoginAt: Date;
+
+  @Column({ nullable: true })
+  lastLoginIp:  string;
+
+  @Column({ type: 'simple-array', default: '' })
+  permissions: string[];
+
+  @Column({ type:  'jsonb', nullable: true })
+  metadata: Record<string, any>;
+
+  @OneToMany(() => Session, (session) => session.user)
+  sessions: Session[];
+
+  @OneToMany(() => RefreshToken, (token) => token.user)
+  refreshTokens: RefreshToken[];
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date;
+
+  get fullName(): string {
+    return `${this.firstName} ${this.lastName}`;
+  }
+}
