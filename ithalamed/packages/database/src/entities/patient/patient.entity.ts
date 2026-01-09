@@ -21,7 +21,7 @@ import { PatientDocument } from './patient-document.entity';
 import { PatientMedicalAid } from './patient-medical-aid.entity';
 import { PatientEmergencyContact } from './patient-emergency-contact.entity';
 import { PatientAllergy } from './patient-allergy.entity';
-import { PatientChronicCondition } from './patient-condition.entity';
+import { PatientChronicCondition } from './patient-condition';
 
 /**
  * Patient Entity
