@@ -1,258 +1,104 @@
 /**
- * Phone number utility functions for IthalaMed platform
+ * Phone Number Validator and Formatter
+ * 
+ * Supports South African and other African phone formats
  */
 
+export interface PhoneValidationResult {
+  isValid: boolean;
+  normalized?:  string;
+  countryCode?: string;
+  nationalNumber?: string;
+  errorMessage?: string;
+}
+
 /**
- * Country phone codes for African countries
+ * Country phone configurations
  */
-export const AFRICAN_COUNTRY_CODES:  Record<string, string> = {
-  ZA: '+27', // South Africa
-  NG: '+234', // Nigeria
-  KE: '+254', // Kenya
-  GH: '+233', // Ghana
-  UG: '+256', // Uganda
-  TZ: '+255', // Tanzania
-  ZW: '+263', // Zimbabwe
-  ZM: '+260', // Zambia
-  BW: '+267', // Botswana
-  NA: '+264', // Namibia
-  MZ: '+258', // Mozambique
-  ET: '+251', // Ethiopia
-  EG: '+20', // Egypt
-  MA: '+212', // Morocco
+const PHONE_CONFIGS:  Record<string, { code: string; length: number; pattern: RegExp }> = {
+  ZA: { code: '+27', length: 9, pattern: /^[6-8]\d{8}$/ }, // South Africa
+  NG: { code: '+234', length: 10, pattern: /^[7-9]\d{9}$/ }, // Nigeria
+  KE: { code: '+254', length: 9, pattern: /^[7]\d{8}$/ }, // Kenya
+  GH: { code: '+233', length: 9, pattern: /^[2-5]\d{8}$/ }, // Ghana
+  UG: { code: '+256', length: 9, pattern: /^[7]\d{8}$/ }, // Uganda
+  TZ: { code: '+255', length: 9, pattern: /^[6-7]\d{8}$/ }, // Tanzania
+  ZW: { code: '+263', length: 9, pattern: /^[7]\d{8}$/ }, // Zimbabwe
+  ZM: { code: '+260', length: 9, pattern: /^[9]\d{8}$/ }, // Zambia
 };
 
 /**
- * Format phone number to E.164 format
- * @param phoneNumber - Phone number to format
- * @param countryCode - Country code (default: 'ZA' for South Africa)
- * @returns Formatted phone number or null if invalid
+ * Validate phone number
  */
-export function formatToE164(phoneNumber: string, countryCode = 'ZA'): string | null {
-  // Remove all non-numeric characters except +
+export function validatePhoneNumber(
+  phoneNumber: string,
+  countryCode:  string = 'ZA',
+): PhoneValidationResult {
+  // Remove all non-digit characters except +
   let cleaned = phoneNumber.replace(/[^\d+]/g, '');
 
-  // If already in E.164 format
-  if (cleaned.startsWith('+')) {
-    return cleaned;
+  const config = PHONE_CONFIGS[countryCode. toUpperCase()];
+  if (!config) {
+    return {
+      isValid: false,
+      errorMessage: `Unsupported country code: ${countryCode}`,
+    };
   }
 
-  // Get country prefix
-  const countryPrefix = AFRICAN_COUNTRY_CODES[countryCode];
-  if (!countryPrefix) {
-    return null;
-  }
-
-  // Remove leading zero if present
-  if (cleaned.startsWith('0')) {
+  // Handle different input formats
+  if (cleaned.startsWith(config.code)) {
+    // Already has country code (+27...)
+    cleaned = cleaned.substring(config.code.length);
+  } else if (cleaned.startsWith(config.code. substring(1))) {
+    // Has country code without + (27...)
+    cleaned = cleaned.substring(config.code.length - 1);
+  } else if (cleaned.startsWith('0')) {
+    // Local format (0...)
     cleaned = cleaned.substring(1);
   }
 
-  // Add country prefix
-  return `${countryPrefix}${cleaned}`;
+  // Validate national number
+  if (! config.pattern.test(cleaned)) {
+    return {
+      isValid: false,
+      errorMessage:  `Invalid ${countryCode} phone number format`,
+    };
+  }
+
+  // Return normalized E.164 format
+  const normalized = `${config.code}${cleaned}`;
+
+  return {
+    isValid: true,
+    normalized,
+    countryCode:  config.code,
+    nationalNumber: cleaned,
+  };
 }
 
 /**
  * Format phone number for display
- * @param phoneNumber - Phone number in E.164 format
- * @returns Formatted display string
  */
-export function formatPhoneForDisplay(phoneNumber: string): string {
-  if (!phoneNumber) return '';
-
-  // South African format: +27 XX XXX XXXX
-  if (phoneNumber.startsWith('+27')) {
-    const local = phoneNumber.substring(3);
-    if (local.length === 9) {
-      return `+27 ${local. substring(0, 2)} ${local.substring(2, 5)} ${local.substring(5)}`;
-    }
+export function formatPhoneNumber(phoneNumber: string, countryCode: string = 'ZA'): string {
+  const result = validatePhoneNumber(phoneNumber, countryCode);
+  if (!result.isValid || ! result.nationalNumber) {
+    return phoneNumber;
   }
 
-  // Nigerian format: +234 XXX XXX XXXX
-  if (phoneNumber.startsWith('+234')) {
-    const local = phoneNumber.substring(4);
-    if (local.length === 10) {
-      return `+234 ${local.substring(0, 3)} ${local.substring(3, 6)} ${local.substring(6)}`;
-    }
+  // Format based on country
+  switch (countryCode. toUpperCase()) {
+    case 'ZA':
+      // +27 82 123 4567
+      return `${result.countryCode} ${result.nationalNumber. substring(0, 2)} ${result.nationalNumber.substring(2, 5)} ${result.nationalNumber.substring(5)}`;
+    default:
+      return result.normalized || phoneNumber;
   }
-
-  // Kenyan format: +254 XXX XXX XXX
-  if (phoneNumber. startsWith('+254')) {
-    const local = phoneNumber.substring(4);
-    if (local.length === 9) {
-      return `+254 ${local.substring(0, 3)} ${local.substring(3, 6)} ${local.substring(6)}`;
-    }
-  }
-
-  // Default:  just add spaces every 3 digits after country code
-  return phoneNumber;
 }
 
 /**
- * Extract country code from phone number
- * @param phoneNumber - Phone number in E.164 format
- * @returns Country code (ISO 3166-1 alpha-2) or null
+ * Mask phone number for display
  */
-export function extractCountryCode(phoneNumber: string): string | null {
-  for (const [code, prefix] of Object.entries(AFRICAN_COUNTRY_CODES)) {
-    if (phoneNumber.startsWith(prefix)) {
-      return code;
-    }
-  }
-  return null;
-}
-
-/**
- * Extract local number (without country code)
- * @param phoneNumber - Phone number in E. 164 format
- * @returns Local number
- */
-export function extractLocalNumber(phoneNumber: string): string {
-  for (const prefix of Object.values(AFRICAN_COUNTRY_CODES)) {
-    if (phoneNumber.startsWith(prefix)) {
-      return phoneNumber. substring(prefix.length);
-    }
-  }
-  // If no country code found, return as-is without +
-  return phoneNumber. replace(/^\+/, '');
-}
-
-/**
- * Validate South African phone number
- * @param phoneNumber - Phone number to validate
- * @returns True if valid SA phone number
- */
-export function isValidSAPhone(phoneNumber:  string): boolean {
-  // Remove non-digits except +
+export function maskPhoneNumber(phoneNumber: string): string {
   const cleaned = phoneNumber.replace(/[^\d+]/g, '');
-
-  // E.164 format: +27 followed by 9 digits
-  if (/^\+27\d{9}$/.test(cleaned)) {
-    return true;
-  }
-
-  // Local format: 0 followed by 9 digits
-  if (/^0\d{9}$/. test(cleaned)) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Validate Nigerian phone number
- * @param phoneNumber - Phone number to validate
- * @returns True if valid Nigerian phone number
- */
-export function isValidNigerianPhone(phoneNumber: string): boolean {
-  const cleaned = phoneNumber.replace(/[^\d+]/g, '');
-
-  // E.164 format: +234 followed by 10 digits
-  if (/^\+234\d{10}$/. test(cleaned)) {
-    return true;
-  }
-
-  // Local format: 0 followed by 10 digits
-  if (/^0\d{10}$/.test(cleaned)) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Validate Kenyan phone number
- * @param phoneNumber - Phone number to validate
- * @returns True if valid Kenyan phone number
- */
-export function isValidKenyanPhone(phoneNumber: string): boolean {
-  const cleaned = phoneNumber.replace(/[^\d+]/g, '');
-
-  // E.164 format: +254 followed by 9 digits
-  if (/^\+254\d{9}$/.test(cleaned)) {
-    return true;
-  }
-
-  // Local format: 0 followed by 9 digits
-  if (/^0\d{9}$/. test(cleaned)) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Get mobile network from SA phone number
- * @param phoneNumber - SA phone number
- * @returns Network name or null
- */
-export function getSAMobileNetwork(phoneNumber: string): string | null {
-  const e164 = formatToE164(phoneNumber, 'ZA');
-  if (!e164 || !e164.startsWith('+27')) {
-    return null;
-  }
-
-  const prefix = e164.substring(3, 5);
-
-  // Vodacom prefixes
-  if (['71', '72', '73', '76', '79', '81', '82']. includes(prefix)) {
-    return 'Vodacom';
-  }
-
-  // MTN prefixes
-  if (['60', '61', '62', '63', '64', '65', '66', '67', '68', '69', '70', '78', '83', '84']. includes(prefix)) {
-    return 'MTN';
-  }
-
-  // Cell C prefixes
-  if (['74', '75', '84']. includes(prefix)) {
-    return 'Cell C';
-  }
-
-  // Telkom prefixes
-  if (['81']. includes(prefix)) {
-    return 'Telkom';
-  }
-
-  return null;
-}
-
-/**
- * Normalize phone number for storage
- * @param phoneNumber - Phone number in any format
- * @param countryCode - Default country code
- * @returns Normalized E.164 format or null
- */
-export function normalizePhoneNumber(phoneNumber: string, countryCode = 'ZA'): string | null {
-  if (!phoneNumber) {
-    return null;
-  }
-
-  const formatted = formatToE164(phoneNumber, countryCode);
-  if (!formatted) {
-    return null;
-  }
-
-  // Validate the formatted number has correct length
-  const countryPrefix = AFRICAN_COUNTRY_CODES[countryCode];
-  if (!countryPrefix) {
-    return null;
-  }
-
-  // SA numbers should be +27 + 9 digits = 12 characters total
-  if (countryCode === 'ZA' && formatted.length !== 12) {
-    return null;
-  }
-
-  // Nigerian numbers should be +234 + 10 digits = 14 characters total
-  if (countryCode === 'NG' && formatted.length !== 14) {
-    return null;
-  }
-
-  // Kenyan numbers should be +254 + 9 digits = 13 characters total
-  if (countryCode === 'KE' && formatted.length !== 13) {
-    return null;
-  }
-
-  return formatted;
+  if (cleaned.length < 8) return phoneNumber;
+  return `${cleaned.substring(0, cleaned.length - 4)}****`;
 }
