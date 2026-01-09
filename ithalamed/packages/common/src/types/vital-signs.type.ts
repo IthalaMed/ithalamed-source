@@ -1,93 +1,193 @@
 /**
- * Patient vital signs
+ * Vital Signs Types
+ * 
+ * Based on Health Tracking & Monitoring requirements from ithalamed_overview2.txt
+ * and Hospital Operations patient monitoring requirements
+ */
+
+/**
+ * Blood pressure reading
+ */
+export interface BloodPressure {
+  systolic: number;
+  diastolic: number;
+  meanArterialPressure?:  number;
+  position?: 'sitting' | 'standing' | 'supine';
+  arm?: 'left' | 'right';
+}
+
+/**
+ * Complete vital signs record
  */
 export interface VitalSigns {
-  /** Blood pressure - systolic (mmHg) */
-  bloodPressureSystolic?:  number;
-  
-  /** Blood pressure - diastolic (mmHg) */
-  bloodPressureDiastolic?: number;
+  /** Blood pressure (mmHg) */
+  bloodPressure?: BloodPressure;
   
   /** Heart rate (beats per minute) */
   heartRate?: number;
   
   /** Respiratory rate (breaths per minute) */
-  respiratoryRate?: number;
-  
-  /** Body temperature (Celsius) */
-  temperature?: number;
+  respiratoryRate?:  number;
   
   /** Oxygen saturation (percentage) */
   oxygenSaturation?:  number;
   
-  /** Weight (kilograms) */
-  weight?:  number;
+  /** Temperature (Celsius) */
+  temperature?: number;
   
-  /** Height (centimeters) */
+  /** Temperature site */
+  temperatureSite?: 'oral' | 'axillary' | 'rectal' | 'tympanic' | 'temporal';
+  
+  /** Weight (kg) */
+  weight?: number;
+  
+  /** Height (cm) */
   height?: number;
   
-  /** Body Mass Index (calculated) */
+  /** BMI (calculated) */
   bmi?: number;
   
   /** Pain score (0-10) */
   painScore?: number;
   
+  /** Glasgow Coma Scale score */
+  gcs?: GlasgowComaScale;
+  
   /** Blood glucose (mmol/L) */
   bloodGlucose?: number;
   
-  /** Glasgow Coma Scale (3-15) */
-  glasgowComaScale?: number;
+  /** Blood glucose timing */
+  glucoseTiming?: 'fasting' | 'random' | 'pre_meal' | 'post_meal';
   
-  /** Timestamp when vitals were recorded */
+  /** End-tidal CO2 (mmHg) - for intubated patients */
+  etCo2?: number;
+  
+  /** Central venous pressure (cmH2O) */
+  cvp?: number;
+  
+  /** Intracranial pressure (mmHg) */
+  icp?: number;
+  
+  /** Recording timestamp */
   recordedAt:  Date;
   
-  /** ID of person who recorded vitals */
-  recordedBy?: string;
+  /** Recording method */
+  recordingMethod?: 'manual' | 'automatic' | 'device';
+  
+  /** Device ID if automatically recorded */
+  deviceId?: string;
   
   /** Notes */
   notes?: string;
 }
 
 /**
- * Normal ranges for vital signs (adults)
+ * Glasgow Coma Scale components
  */
-export const VITAL_SIGNS_NORMAL_RANGES = {
-  bloodPressureSystolic: { min: 90, max: 120 },
-  bloodPressureDiastolic: { min:  60, max:  80 },
-  heartRate: { min: 60, max: 100 },
-  respiratoryRate: { min: 12, max: 20 },
-  temperature: { min: 36.1, max: 37.2 },
-  oxygenSaturation: { min: 95, max: 100 },
-  bloodGlucose:  { min: 4.0, max: 7.8 }, // fasting
-};
-
-/**
- * Calculate BMI from weight and height
- */
-export function calculateBMI(weightKg: number, heightCm: number): number {
-  const heightM = heightCm / 100;
-  return Math.round((weightKg / (heightM * heightM)) * 10) / 10;
+export interface GlasgowComaScale {
+  /** Eye opening (1-4) */
+  eyeOpening:  number;
+  
+  /** Verbal response (1-5) */
+  verbalResponse: number;
+  
+  /** Motor response (1-6) */
+  motorResponse: number;
+  
+  /** Total score (3-15) */
+  total: number;
 }
 
 /**
- * Get BMI category
+ * Early Warning Score (NEWS2)
  */
-export function getBMICategory(bmi: number): string {
-  if (bmi < 18.5) return 'Underweight';
-  if (bmi < 25) return 'Normal';
-  if (bmi < 30) return 'Overweight';
-  if (bmi < 35) return 'Obese Class I';
-  if (bmi < 40) return 'Obese Class II';
-  return 'Obese Class III';
+export interface NEWS2Score {
+  respiratoryRate: number;
+  oxygenSaturation: number;
+  supplementalOxygen: boolean;
+  temperature: number;
+  systolicBP: number;
+  heartRate: number;
+  consciousness: 'alert' | 'voice' | 'pain' | 'unresponsive';
+  totalScore: number;
+  riskLevel: 'low' | 'low_medium' | 'medium' | 'high';
 }
 
 /**
- * Check if vital sign is within normal range
+ * Pediatric vital signs with age-specific normal ranges
  */
-export function isVitalSignNormal(
-  vitalSign: keyof typeof VITAL_SIGNS_NORMAL_RANGES,
-  value: number,
-): boolean {
-  const range = VITAL_SIGNS_NORMAL_RANGES[vitalSign];
-  return value >= range.min && value <= range.max;
+export interface PediatricVitalSigns extends VitalSigns {
+  /** Age in months (for reference range lookup) */
+  ageInMonths:  number;
+  
+  /** Head circumference (cm) - for infants */
+  headCircumference?: number;
+  
+  /** Capillary refill time (seconds) */
+  capillaryRefillTime?: number;
+}
+
+/**
+ * Obstetric vital signs
+ */
+export interface ObstetricVitalSigns extends VitalSigns {
+  /** Fundal height (cm) */
+  fundalHeight?: number;
+  
+  /** Fetal heart rate (bpm) */
+  fetalHeartRate?: number;
+  
+  /** Fetal movement count */
+  fetalMovements?: number;
+  
+  /** Uterine contractions per 10 minutes */
+  contractionFrequency?: number;
+  
+  /** Contraction duration (seconds) */
+  contractionDuration?: number;
+  
+  /** Cervical dilation (cm) - during labor */
+  cervicalDilation?: number;
+  
+  /** Cervical effacement (%) - during labor */
+  cervicalEffacement?: number;
+  
+  /** Station (-3 to +3) - during labor */
+  station?: number;
+}
+
+/**
+ * ICU-specific vital signs
+ */
+export interface ICUVitalSigns extends VitalSigns {
+  /** Arterial blood pressure (from arterial line) */
+  arterialBP?: BloodPressure;
+  
+  /** Pulmonary artery pressure */
+  pulmonaryArteryPressure?: {
+    systolic: number;
+    diastolic: number;
+    mean: number;
+  };
+  
+  /** Pulmonary capillary wedge pressure */
+  pcwp?: number;
+  
+  /** Cardiac output (L/min) */
+  cardiacOutput?: number;
+  
+  /** Cardiac index (L/min/m²) */
+  cardiacIndex?: number;
+  
+  /** Systemic vascular resistance */
+  svr?: number;
+  
+  /** Mixed venous oxygen saturation */
+  svo2?: number;
+  
+  /** Urine output (mL/hr) */
+  urineOutput?: number;
+  
+  /** Fluid balance (mL) - intake minus output */
+  fluidBalance?: number;
 }
