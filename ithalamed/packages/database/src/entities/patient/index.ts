@@ -5,4 +5,4 @@ export * from './patient-guardian.entity';
 export * from './patient-medical-aid.entity';
 export * from './patient-emergency-contact.entity';
 export * from './patient-allergy.entity';
-export * from './patient-condition.entity';
+export * from './patient-condition';
