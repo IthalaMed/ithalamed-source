@@ -1,0 +1,44 @@
+{
+  "name": "ithalamed",
+  "version": "1.0.0",
+  "private": true,
+  "description": "IthalaMed - Unified Healthcare Platform for Africa",
+  "author": "IthalaMed Team",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/mobile/*",
+    "apps/web/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint":  "turbo run lint",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "prepare": "husky install",
+    "db:migrate": "turbo run db:migrate",
+    "db:seed": "turbo run db:seed",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
+  },
+  "devDependencies":  {
+    "@commitlint/cli":  "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3",
+    "@types/node": "^20.10.0",
+    "eslint": "^8.55.0",
+    "husky": "^8.0.3",
+    "lint-staged":  "^15.2.0",
+    "prettier": "^3.1.0",
+    "turbo": "^1.11.0",
+    "typescript": "^5.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.12.0"
+}
