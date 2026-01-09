@@ -1,0 +1,921 @@
+# IthalaMed - Complete Folder Structure
+
+## Overview
+
+This document describes the complete folder structure for the IthalaMed unified healthcare platform. 
+
+## Architecture Decisions
+
+1. **Monorepo**:  Single repository containing all applications and services
+2. **Microservices Backend**: Separate services for each domain
+3. **Shared Packages**: Common code shared across apps and services
+4. **Centralized Database Entities**: All entities in shared package
+5. **Feature-based Frontend Structure**: Organized by features, not file types
+
+---
+
+## Root Structure
+
+```
+ithalamed/
+│
+├── . github/                          # GitHub configuration
+│   ├── workflows/                    # CI/CD pipelines
+│   │   ├── ci.yml
+│   │   ├── deploy-staging.yml
+│   │   └── deploy-production.yml
+│   ├── CODEOWNERS
+│   └── pull_request_template.md
+│
+├── . husky/                           # Git hooks
+│   ├── pre-commit
+│   └── commit-msg
+│
+├── apps/                             # Frontend Applications
+│   ├── mobile/                       # React Native Expo Apps
+│   │   ├── patient-app/
+│   │   ├── provider-app/
+│   │   ├── pharmacy-app/
+│   │   ├── lab-app/
+│   │   ├── ems-app/
+│   │   └── hospital-app/
+│   │
+│   └── web/                          # Next.js Web Apps
+│       ├── patient-portal/
+│       ├── provider-portal/
+│       ├── pharmacy-portal/
+│       ├── lab-portal/
+│       ├── ems-portal/
+│       ├── hospital-portal/
+│       ├── insurance-portal/
+│       ├── gov-dashboard/
+│       └── admin-portal/
+│
+├── services/                         # Backend Microservices
+│   ├── api-gateway/                  # API Gateway (Kong/Express)
+│   ├── auth-service/                 # Authentication & Authorization
+│   ├── patient-service/              # Patient Management
+│   ├── provider-service/             # Healthcare Provider Management
+│   ├── appointment-service/          # Appointment Scheduling
+│   ├── prescription-service/         # E-Prescriptions
+│   ├── pharmacy-service/             # Pharmacy Operations
+│   ├── lab-service/                  # Laboratory Management
+│   ├── ems-service/                  # Emergency Medical Services
+│   ├── hospital-service/             # Hospital Operations
+│   ├── insurance-service/            # Medical Aid/Insurance
+│   ├── notification-service/         # Push/SMS/Email Notifications
+│   ├── audit-service/                # Audit Logging
+│   ├── file-service/                 # File Upload/Storage
+│   └── analytics-service/            # Reporting & Analytics
+│
+├── packages/                         # Shared Packages
+│   ├── common/                       # Common utilities & types
+│   ├── database/                     # Database entities & migrations
+│   ├── ui-kit/                       # Shared UI components
+│   ├── api-client/                   # API client SDK
+│   ├── validators/                   # Shared validation schemas
+│   └── config/                       # Shared configuration
+│
+├── infrastructure/                   # Infrastructure as Code
+│   ├── terraform/                    # Terraform configurations
+│   ├── kubernetes/                   # K8s manifests
+│   ├── docker/                       # Dockerfiles
+│   └── scripts/                      # Deployment scripts
+│
+├── docs/                             # Documentation
+│   ├── api/                          # API documentation
+│   ├── architecture/                 # Architecture diagrams
+│   └── guides/                       # Developer guides
+│
+├── tools/                            # Development tools
+│   ├── generators/                   # Code generators
+│   └── scripts/                      # Utility scripts
+│
+├── package.json                      # Root package.json (workspaces)
+├── pnpm-workspace.yaml               # PNPM workspace config
+├── turbo.json                        # Turborepo config
+├── tsconfig.base.json                # Base TypeScript config
+├── . eslintrc.js                      # ESLint config
+├── .prettierrc                       # Prettier config
+├── .env.example                      # Environment variables template
+└── README.md
+```
+
+---
+
+## Detailed Structure:  Shared Packages
+
+### packages/common/
+
+```
+packages/common/
+├── src/
+│   ├── constants/
+│   │   ├── index.ts
+│   │   ├── app.constants.ts
+│   │   ├── regex.constants.ts
+│   │   └── error-codes.constants.ts
+│   │
+│   ├── enums/
+│   │   ├── index.ts
+│   │   ├── user-type.enum.ts
+│   │   ├── user-status.enum. ts
+│   │   ├── gender.enum.ts
+│   │   ├── blood-type.enum. ts
+│   │   ├── patient-status.enum. ts
+│   │   ├── appointment-status.enum. ts
+│   │   ├── appointment-type.enum. ts
+│   │   ├── prescription-status.enum.ts
+│   │   ├── order-priority.enum.ts
+│   │   ├── triage-level.enum.ts
+│   │   ├── mfa-method.enum. ts
+│   │   └── otp-purpose.enum.ts
+│   │
+│   ├── types/
+│   │   ├── index.ts
+│   │   ├── address.type.ts
+│   │   ├── medical-aid.type.ts
+│   │   ├── emergency-contact.type. ts
+│   │   ├── vital-signs.type. ts
+│   │   ├── device-info.type.ts
+│   │   ├── pagination.type.ts
+│   │   ├── api-response.type. ts
+│   │   └── audit-log.type. ts
+│   │
+│   ├── interfaces/
+│   │   ├── index.ts
+│   │   ├── base-entity.interface.ts
+│   │   ├── jwt-payload.interface.ts
+│   │   ├── service-response.interface.ts
+│   │   └── event-payload.interface.ts
+│   │
+│   ├── utils/
+│   │   ├── index.ts
+│   │   ├── date. utils.ts
+│   │   ├── string.utils.ts
+│   │   ├── validation.utils.ts
+│   │   ├── sa-id.utils.ts              # South African ID validation
+│   │   └── phone.utils.ts
+│   │
+│   ├── errors/
+│   │   ├── index.ts
+│   │   ├── base. error.ts
+│   │   ├── validation.error. ts
+│   │   ├── not-found.error. ts
+│   │   ├── unauthorized.error.ts
+│   │   └── conflict.error.ts
+│   │
+│   └── index.ts                        # Main export
+│
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+### packages/database/
+
+```
+packages/database/
+├── src/
+│   ├── entities/
+│   │   ├── index. ts                    # Export all entities
+│   │   │
+│   │   ├── base/
+│   │   │   └── base. entity.ts          # Abstract base entity
+│   │   │
+│   │   ├── auth/
+│   │   │   ├── user.entity.ts
+│   │   │   ├── session.entity.ts
+│   │   │   ├── refresh-token.entity.ts
+│   │   │   └── otp.entity.ts
+│   │   │
+│   │   ├── patient/
+│   │   │   ├── patient.entity. ts
+│   │   │   ├── patient-consent.entity.ts
+│   │   │   └── patient-document.entity.ts
+│   │   │
+│   │   ├── provider/
+│   │   │   ├── provider.entity.ts
+│   │   │   ├── provider-schedule.entity.ts
+│   │   │   ├── provider-qualification.entity.ts
+│   │   │   └── provider-facility.entity.ts
+│   │   │
+│   │   ├── appointment/
+│   │   │   ├── appointment.entity.ts
+│   │   │   └── appointment-reminder.entity.ts
+│   │   │
+│   │   ├── clinical/
+│   │   │   ├── medical-record.entity.ts
+│   │   │   ├── vital-signs.entity. ts
+│   │   │   ├── diagnosis.entity. ts
+│   │   │   └── clinical-note.entity. ts
+│   │   │
+│   │   ├── prescription/
+│   │   │   ├── prescription.entity.ts
+│   │   │   ├── prescription-item.entity.ts
+│   │   │   └── prescription-dispensing.entity.ts
+│   │   │
+│   │   ├── pharmacy/
+│   │   │   ├── pharmacy.entity. ts
+│   │   │   ├── medication.entity.ts
+│   │   │   ├── inventory.entity.ts
+│   │   │   └── inventory-batch.entity.ts
+│   │   │
+│   │   ├── laboratory/
+│   │   │   ├── lab-order.entity.ts
+│   │   │   ├── lab-test.entity.ts
+│   │   │   ├── lab-result.entity.ts
+│   │   │   └── lab-specimen.entity.ts
+│   │   │
+│   │   ├── ems/
+│   │   │   ├── emergency-call.entity. ts
+│   │   │   ├── ambulance.entity.ts
+│   │   │   ├── ems-crew.entity.ts
+│   │   │   └── ems-dispatch.entity. ts
+│   │   │
+│   │   ├── facility/
+│   │   │   ├── facility.entity.ts
+│   │   │   ├── department.entity.ts
+│   │   │   ├── bed.entity.ts
+│   │   │   └── equipment.entity.ts
+│   │   │
+│   │   ├── insurance/
+│   │   │   ├── insurance-provider.entity.ts
+│   │   │   ├── insurance-plan.entity.ts
+│   │   │   ├── claim.entity.ts
+│   │   │   └── pre-authorization.entity. ts
+│   │   │
+│   │   └── audit/
+│   │       └── audit-log. entity.ts
+│   │
+│   ├── migrations/
+│   │   ├── 1704067200000-InitialSchema.ts
+│   │   ├── 1704067200001-CreateAuthTables.ts
+│   │   ├── 1704067200002-CreatePatientTables.ts
+│   │   ├── 1704067200003-CreateProviderTables.ts
+│   │   ├── 1704067200004-CreateAppointmentTables.ts
+│   │   ├── 1704067200005-CreateClinicalTables. ts
+│   │   ├── 1704067200006-CreatePrescriptionTables.ts
+│   │   ├── 1704067200007-CreatePharmacyTables.ts
+│   │   ├── 1704067200008-CreateLabTables.ts
+│   │   ├── 1704067200009-CreateEmsTables.ts
+│   │   ├── 1704067200010-CreateFacilityTables.ts
+│   │   ├── 1704067200011-CreateInsuranceTables.ts
+│   │   └── 1704067200012-CreateAuditTables. ts
+│   │
+│   ├── seeds/
+│   │   ├── index.ts
+│   │   ├── users.seed.ts
+│   │   ├── facilities.seed.ts
+│   │   └── medications.seed.ts
+│   │
+│   ├── subscribers/
+│   │   ├── audit. subscriber.ts
+│   │   └── soft-delete.subscriber. ts
+│   │
+│   ├── config/
+│   │   ├── database.config.ts
+│   │   └── typeorm.config.ts
+│   │
+│   └── index.ts
+│
+├── package.json
+├── tsconfig.json
+└── ormconfig.ts
+```
+
+---
+
+## Detailed Structure: Backend Microservices
+
+### services/auth-service/
+
+```
+services/auth-service/
+├── src/
+│   ├── config/
+│   │   ├── index.ts
+│   │   ├── app.config.ts
+│   │   ├── jwt.config.ts
+│   │   └── redis.config.ts
+│   │
+│   ├── dto/
+│   │   ├── index.ts
+│   │   ├── register.dto.ts
+│   │   ├── login.dto.ts
+│   │   ├── refresh-token.dto.ts
+│   │   ├── verify-email.dto.ts
+│   │   ├── verify-phone.dto.ts
+│   │   ├── send-otp.dto.ts
+│   │   ├── setup-mfa.dto.ts
+│   │   ├── verify-mfa.dto.ts
+│   │   ├── forgot-password.dto.ts
+│   │   ├── reset-password.dto.ts
+│   │   ├── change-password.dto. ts
+│   │   ├── setup-pin.dto.ts
+│   │   └── verify-pin. dto.ts
+│   │
+│   ├── strategies/
+│   │   ├── jwt.strategy.ts
+│   │   └── local.strategy.ts
+│   │
+│   ├── guards/
+│   │   ├── index.ts
+│   │   ├── jwt-auth.guard. ts
+│   │   ├── roles.guard.ts
+│   │   ├── permissions.guard.ts
+│   │   └── mfa. guard.ts
+│   │
+│   ├── decorators/
+│   │   ├── index.ts
+│   │   ├── current-user.decorator. ts
+│   │   ├── public.decorator.ts
+│   │   ├── roles.decorator.ts
+│   │   └── permissions.decorator. ts
+│   │
+│   ├── services/
+│   │   ├── auth.service.ts
+│   │   ├── token.service.ts
+│   │   ├── otp.service.ts
+│   │   ├── mfa.service.ts
+│   │   └── session.service.ts
+│   │
+│   ├── controllers/
+│   │   └── auth.controller. ts
+│   │
+│   ├── events/
+│   │   ├── user-registered.event.ts
+│   │   ├── user-logged-in.event.ts
+│   │   └── password-reset.event. ts
+│   │
+│   ├── auth.module.ts
+│   ├── app.module.ts
+│   └── main.ts
+│
+├── test/
+│   ├── unit/
+│   │   ├── auth.service.spec.ts
+│   │   └── token.service.spec. ts
+│   └── e2e/
+│       └── auth.e2e-spec.ts
+│
+├── Dockerfile
+├── package.json
+├── tsconfig.json
+├── nest-cli.json
+└── README.md
+```
+
+### services/patient-service/
+
+```
+services/patient-service/
+├── src/
+│   ├── config/
+│   │   ├── index.ts
+│   │   └── app.config.ts
+│   │
+│   ├── dto/
+│   │   ├── index.ts
+│   │   ├── register-patient.dto.ts
+│   │   ├── update-patient.dto. ts
+│   │   ├── search-patient.dto.ts
+│   │   ├── add-dependent.dto.ts
+│   │   ├── update-emergency-contact.dto. ts
+│   │   ├── update-medical-aid.dto.ts
+│   │   └── patient-response.dto.ts
+│   │
+│   ├── services/
+│   │   ├── patient.service.ts
+│   │   ├── dependent.service.ts
+│   │   ├── consent.service.ts
+│   │   └── patient-document.service.ts
+│   │
+│   ├── controllers/
+│   │   ├── patient.controller.ts
+│   │   ├── dependent. controller.ts
+│   │   └── consent.controller.ts
+│   │
+│   ├── events/
+│   │   ├── patient-registered.event. ts
+│   │   ├── patient-updated.event.ts
+│   │   └── consent-updated.event. ts
+│   │
+│   ├── patient.module.ts
+│   ├── app.module.ts
+│   └── main.ts
+│
+├── test/
+│   ├── unit/
+│   │   └── patient.service. spec.ts
+│   └── e2e/
+│       └── patient.e2e-spec. ts
+│
+├── Dockerfile
+├── package.json
+├── tsconfig. json
+├── nest-cli. json
+└── README.md
+```
+
+### services/api-gateway/
+
+```
+services/api-gateway/
+├── src/
+│   ├── config/
+│   │   ├── gateway.config.ts
+│   │   ├── rate-limit.config.ts
+│   │   └── cors.config.ts
+│   │
+│   ├── middleware/
+│   │   ├── auth.middleware.ts
+│   │   ├── rate-limit.middleware. ts
+│   │   ├── logging.middleware.ts
+│   │   └── cors.middleware.ts
+│   │
+│   ├── routes/
+│   │   ├── auth.routes.ts
+│   │   ├── patient.routes.ts
+│   │   ├── provider.routes.ts
+│   │   ├── appointment. routes.ts
+│   │   └── index.ts
+│   │
+│   ├── services/
+│   │   ├── proxy.service.ts
+│   │   └── service-discovery.service.ts
+│   │
+│   ├── app.module.ts
+│   └── main.ts
+│
+├── Dockerfile
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+---
+
+## Detailed Structure: Frontend Applications
+
+### apps/mobile/patient-app/
+
+```
+apps/mobile/patient-app/
+├── app/                              # Expo Router (file-based routing)
+│   ├── (auth)/                       # Auth group (unauthenticated)
+│   │   ├── _layout.tsx
+│   │   ├── login.tsx
+│   │   ├── register/
+│   │   │   ├── index.tsx             # Step 1: Personal details
+│   │   │   ├── contact.tsx           # Step 2: Contact details
+│   │   │   ├── medical-aid.tsx       # Step 3: Medical aid
+│   │   │   ├── emergency. tsx         # Step 4: Emergency contacts
+│   │   │   └── complete. tsx          # Step 5: Complete
+│   │   ├── verify-otp.tsx
+│   │   ├── forgot-password.tsx
+│   │   └── reset-password. tsx
+│   │
+│   ├── (app)/                        # Main app group (authenticated)
+│   │   ├── _layout.tsx               # Tab navigator
+│   │   ├── (tabs)/
+│   │   │   ├── _layout.tsx
+│   │   │   ├── index.tsx             # Dashboard/Home
+│   │   │   ├── appointments.tsx
+│   │   │   ├── records.tsx
+│   │   │   ├── prescriptions.tsx
+│   │   │   └── profile.tsx
+│   │   │
+│   │   ├── appointments/
+│   │   │   ├── [id].tsx              # Appointment details
+│   │   │   ├── book/
+│   │   │   │   ├── index.tsx         # Search providers
+│   │   │   │   ├── [providerId].tsx  # Provider profile
+│   │   │   │   ├── select-time.tsx
+│   │   │   │   └── confirm.tsx
+│   │   │   └── telemedicine/
+│   │   │       ├── waiting-room.tsx
+│   │   │       └── consultation. tsx
+│   │   │
+│   │   ├── records/
+│   │   │   ├── [id]. tsx
+│   │   │   ├── upload. tsx
+│   │   │   └── share.tsx
+│   │   │
+│   │   ├── prescriptions/
+│   │   │   ├── [id].tsx
+│   │   │   ├── refill.tsx
+│   │   │   └── pharmacies.tsx
+│   │   │
+│   │   ├── emergency/
+│   │   │   ├── index.tsx             # Emergency request
+│   │   │   └── tracking.tsx          # Track ambulance
+│   │   │
+│   │   ├── health/
+│   │   │   ├── vitals.tsx
+│   │   │   ├── medications.tsx
+│   │   │   └── tracking.tsx
+│   │   │
+│   │   ├── dependents/
+│   │   │   ├── index.tsx
+│   │   │   ├── add. tsx
+│   │   │   └── [id].tsx
+│   │   │
+│   │   └── settings/
+│   │       ├── index.tsx
+│   │       ├── profile.tsx
+│   │       ├── security.tsx
+│   │       ├── notifications.tsx
+│   │       └── language.tsx
+│   │
+│   ├── _layout.tsx                   # Root layout
+│   └── index.tsx                     # Entry point (redirect)
+│
+├── src/
+│   ├── components/
+│   │   ├── ui/                       # Base UI components
+│   │   │   ├── Button.tsx
+│   │   │   ├── Input.tsx
+│   │   │   ├── Card.tsx
+│   │   │   ├── Modal.tsx
+│   │   │   ├── Avatar.tsx
+│   │   │   ├── Badge.tsx
+│   │   │   ├── Skeleton.tsx
+│   │   │   └── index.ts
+│   │   │
+│   │   ├── forms/
+│   │   │   ├── FormInput.tsx
+│   │   │   ├── FormSelect. tsx
+│   │   │   ├── FormDatePicker.tsx
+│   │   │   ├── FormPhoneInput.tsx
+│   │   │   └── index.ts
+│   │   │
+│   │   ├── layout/
+│   │   │   ├── Header.tsx
+│   │   │   ├── TabBar.tsx
+│   │   │   ├── SafeAreaView.tsx
+│   │   │   └── index.ts
+│   │   │
+│   │   ├── patient/
+│   │   │   ├── PatientCard. tsx
+│   │   │   ├── HealthSummary.tsx
+│   │   │   ├── VitalsCard.tsx
+│   │   │   ├── MedicationCard.tsx
+│   │   │   └── EmergencyButton.tsx
+│   │   │
+│   │   ├── appointments/
+│   │   │   ├── AppointmentCard.tsx
+│   │   │   ├── ProviderCard.tsx
+│   │   │   ├── TimeSlotPicker.tsx
+│   │   │   └── CalendarView.tsx
+│   │   │
+│   │   └── common/
+│   │       ├── ErrorBoundary.tsx
+│   │       ├── LoadingScreen.tsx
+│   │       ├── EmptyState.tsx
+│   │       └── NetworkStatus.tsx
+│   │
+│   ├── features/
+│   │   ├── auth/
+│   │   │   ├── api.ts
+│   │   │   ├── slice.ts
+│   │   │   ├── hooks.ts
+│   │   │   └── types.ts
+│   │   │
+│   │   ├── patient/
+│   │   │   ├── api.ts
+│   │   │   ├── slice.ts
+│   │   │   ├── hooks.ts
+│   │   │   └── types.ts
+│   │   │
+│   │   ├── appointments/
+│   │   │   ├── api.ts
+│   │   │   ├── slice.ts
+│   │   │   ├── hooks.ts
+│   │   │   └── types.ts
+│   │   │
+│   │   └── emergency/
+│   │       ├── api.ts
+│   │       ├── slice.ts
+│   │       ├── hooks.ts
+│   │       └── types.ts
+│   │
+│   ├── store/
+│   │   ├── index.ts
+│   │   ├── rootReducer.ts
+│   │   ├── middleware.ts
+│   │   └── persistConfig.ts
+│   │
+│   ├── services/
+│   │   ├── api.ts                    # Axios instance
+│   │   ├── storage.ts                # Async storage
+│   │   ├── biometrics.ts             # Biometric auth
+│   │   ├── notifications.ts          # Push notifications
+│   │   ├── location.ts               # GPS location
+│   │   └── socket.ts                 # WebSocket
+│   │
+│   ├── hooks/
+│   │   ├── useAuth.ts
+│   │   ├── useOffline.ts
+│   │   ├── useLocation.ts
+│   │   ├── useBiometrics.ts
+│   │   └── useNotifications. ts
+│   │
+│   ├── utils/
+│   │   ├── validation.ts
+│   │   ├── formatting.ts
+│   │   ├── date.ts
+│   │   └── constants.ts
+│   │
+│   ├── theme/
+│   │   ├── index.ts
+│   │   ├── colors.ts
+│   │   ├── typography.ts
+│   │   ├── spacing.ts
+│   │   └── shadows.ts
+│   │
+│   ├── i18n/
+│   │   ├── index.ts
+│   │   ├── en.json
+│   │   ├── zu.json                   # Zulu
+│   │   ├── sw.json                   # Swahili
+│   │   └── ... 
+│   │
+│   └── types/
+│       ├── navigation.ts
+│       └── env. d.ts
+│
+├── assets/
+│   ├── images/
+│   ├── icons/
+│   └── fonts/
+│
+├── app.json
+├── package. json
+├── tsconfig.json
+├── babel.config.js
+├── metro.config.js
+├── eas.json
+└── README.md
+```
+
+### apps/web/patient-portal/
+
+```
+apps/web/patient-portal/
+├── src/
+│   ├── app/                          # Next.js App Router
+│   │   ├── (auth)/
+│   │   │   ├── login/
+│   │   │   │   └── page.tsx
+│   │   │   ├── register/
+│   │   │   │   └── page.tsx
+│   │   │   ├── verify/
+│   │   │   │   └── page.tsx
+│   │   │   ├── forgot-password/
+│   │   │   │   └── page.tsx
+│   │   │   └── layout.tsx
+│   │   │
+│   │   ├── (dashboard)/
+│   │   │   ├── page.tsx              # Dashboard
+│   │   │   ├── appointments/
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── [id]/
+│   │   │   │   │   └── page. tsx
+│   │   │   │   └── book/
+│   │   │   │       └── page.tsx
+│   │   │   ├── records/
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── [id]/
+│   │   │   │       └── page.tsx
+│   │   │   ├── prescriptions/
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── [id]/
+│   │   │   │       └── page.tsx
+│   │   │   ├── health/
+│   │   │   │   └── page.tsx
+│   │   │   ├── settings/
+│   │   │   │   └── page.tsx
+│   │   │   └── layout.tsx
+│   │   │
+│   │   ├── api/                      # API Routes (if needed)
+│   │   │   └── ... 
+│   │   │
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   └── globals.css
+│   │
+│   ├── components/
+│   │   ├── ui/                       # shadcn/ui components
+│   │   │   ├── button.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── card.tsx
+│   │   │   └── ... 
+│   │   │
+│   │   ├── forms/
+│   │   │   ├── LoginForm.tsx
+│   │   │   ├── RegisterForm.tsx
+│   │   │   └── ... 
+│   │   │
+│   │   ├── layout/
+│   │   │   ├── Navbar.tsx
+│   │   │   ├── Sidebar.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   └── ... 
+│   │   │
+│   │   ├── dashboard/
+│   │   │   ├── StatsCard.tsx
+│   │   │   ├── RecentActivity.tsx
+│   │   │   └── ...
+│   │   │
+│   │   └── shared/
+│   │       ├── LoadingSpinner.tsx
+│   │       ├── ErrorAlert.tsx
+│   │       └── ... 
+│   │
+│   ├── lib/
+│   │   ├── api.ts
+│   │   ├── auth.ts
+│   │   ├── utils.ts
+│   │   └── validations.ts
+│   │
+│   ├── hooks/
+│   │   ├── useAuth. ts
+│   │   ├── usePatient.ts
+│   │   └── ... 
+│   │
+│   ├── store/
+│   │   ├── index.ts
+│   │   ├── authSlice.ts
+│   │   ├── patientSlice.ts
+│   │   └── ...
+│   │
+│   ├── types/
+│   │   └── index.ts
+│   │
+│   └── styles/
+│       └── ... 
+│
+├── public/
+│   ├── images/
+│   └── ... 
+│
+├── package.json
+├── tsconfig. json
+├── next.config.js
+├── tailwind.config.js
+├── postcss.config.js
+└── README.md
+```
+
+---
+
+## Microservices Communication
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              API Gateway                                     │
+│                         (services/api-gateway)                               │
+│                                                                              │
+│  • Authentication/Authorization                                              │
+│  • Rate Limiting                                                             │
+│  • Request Routing                                                           │
+│  • Response Aggregation                                                      │
+│  • SSL Termination                                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                 ┌────────────────────┼────────────────────┐
+                 │                    │                    │
+                 ▼                    ▼                    ▼
+    ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
+    │  Auth Service   │   │ Patient Service │   │Provider Service │
+    │   Port:  3001    │   │   Port: 3002    │   │   Port: 3003    │
+    └─────────────────┘   └─────────────────┘   └─────────────────┘
+             │                    │                    │
+             │                    │                    │
+             ▼                    ▼                    ▼
+    ┌─────────────────────────────────────────────────────────────┐
+    │                    Message Broker (RabbitMQ)                 │
+    │                                                              │
+    │  Queues:                                                     │
+    │  • user.registered                                           │
+    │  • patient.created                                           │
+    │  • appointment.booked                                        │
+    │  • prescription.created                                      │
+    │  • notification.send                                         │
+    └─────────────────────────────────────────────────────────────┘
+             │                    │                    │
+             ▼                    ▼                    ▼
+    ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
+    │ Notification    │   │  Audit Service  │   │   Analytics     │
+    │   Service       │   │   Port: 3010    │   │   Service       │
+    │   Port: 3009    │   │                 │   │   Port: 3011    │
+    └─────────────────┘   └─────────────────┘   └─────────────────┘
+             │
+             ▼
+    ┌─────────────────────────────────────────────────────────────┐
+    │                    External Services                         │
+    │                                                              │
+    │  • Twilio (SMS)                                              │
+    │  • SendGrid (Email)                                          │
+    │  • Firebase (Push Notifications)                             │
+    │  • AWS S3 (File Storage)                                     │
+    └─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Database Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Database Per Service Pattern                         │
+└─────────────────────────────────────────────��───────────────────────────────┘
+
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  Auth Service   │     │ Patient Service │     │Provider Service │
+└────────┬────────┘     └────────┬────────┘     └────────┬────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   PostgreSQL    │     │   PostgreSQL    │     │   PostgreSQL    │
+│   ithalamed_    │     │   ithalamed_    │     │   ithalamed_    │
+│      auth       │     │    patients     │     │   providers     │
+│                 │     │                 │     │                 │
+│ • users         │     │ • patients      │     │ • providers     │
+│ • sessions      │     │ • consents      │     │ • schedules     │
+│ • refresh_tokens│     │ • documents     │     │ • qualifications│
+│ • otps          │     │                 │     │                 │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+
+                    ┌─────────────────────────────┐
+                    │         Redis Cluster        │
+                    │                              │
+                    │  • Session cache             │
+                    │  • Rate limiting             │
+                    │  • OTP storage               │
+                    │  • Real-time data            │
+                    └─────────────────────────────┘
+```
+
+---
+
+## Environment Configuration
+
+```
+# Root . env. example
+
+# ============================================
+# GENERAL
+# ============================================
+NODE_ENV=development
+APP_URL=http://localhost:3000
+
+# ============================================
+# AUTH SERVICE
+# ============================================
+AUTH_SERVICE_PORT=3001
+JWT_SECRET=your-super-secret-jwt-key
+JWT_EXPIRES_IN=15m
+REFRESH_TOKEN_EXPIRES_IN=7d
+
+# ============================================
+# PATIENT SERVICE
+# ============================================
+PATIENT_SERVICE_PORT=3002
+
+# ============================================
+# DATABASES
+# ============================================
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=ithalamed
+DB_PASSWORD=your-password
+
+AUTH_DB_NAME=ithalamed_auth
+PATIENT_DB_NAME=ithalamed_patients
+PROVIDER_DB_NAME=ithalamed_providers
+
+# ============================================
+# REDIS
+# ============================================
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# ============================================
+# MESSAGE BROKER
+# ============================================
+RABBITMQ_URL=amqp://localhost: 5672
+
+# ============================================
+# EXTERNAL SERVICES
+# ============================================
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
+
+SENDGRID_API_KEY=
+
+ENCRYPTION_KEY=your-32-character-encryption-key
+```
