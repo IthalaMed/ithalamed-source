@@ -5,3 +5,4 @@ export * from './validation.utils';
 export * from './sa-id.utils';
 export * from './phone.utils';
 export * from './crypto.utils';
+export * from './password-validator.util';
