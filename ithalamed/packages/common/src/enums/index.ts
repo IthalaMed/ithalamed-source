@@ -34,5 +34,8 @@ export * from './facility. enum';
 // Hospital operations enums
 export * from './hospital.enum';
 
+// Audit enums
+export * from './audit-action.enum';
+
 // Insurance enums
 export * from './insurance.enum';
