@@ -6,32 +6,49 @@ import {
   BeforeInsert,
   BeforeUpdate,
 } from 'typeorm';
-import { SoftDeletableEntity } from '../base/base.entity';
+import { AuditableEntity } from '../base/base.entity';
 import { UserType, UserStatus, MfaMethod } from '@ithalamed/common';
 import { Session } from './session.entity';
 import { RefreshToken } from './refresh-token.entity';
 
+/**
+ * User Entity
+ * 
+ * Core authentication entity for all user types in the IthalaMed platform. 
+ * Implements FR-PAT-001 (multi-method authentication), FR-PAT-002 (2FA),
+ * and security requirements from ithalamed_overview.txt.
+ */
 @Entity('users')
-@Index(['email'], { unique: true })
+@Index(['email'], { unique: true, where: '"email" IS NOT NULL' })
 @Index(['phoneNumber'], { unique: true })
-@Index(['status'])
 @Index(['userType'])
-export class User extends SoftDeletableEntity {
+@Index(['status'])
+@Index(['createdAt'])
+export class User extends AuditableEntity {
+  /**
+   * Email address (unique, nullable for phone-only users)
+   */
   @Column({
     name: 'email',
     type: 'varchar',
     length: 255,
-    unique: true,
+    nullable: true,
   })
-  email: string;
+  email: string | null;
 
+  /**
+   * Whether email is verified
+   */
   @Column({
-    name:  'email_verified',
-    type: 'boolean',
-    default: false,
+    name: 'email_verified',
+    type:  'boolean',
+    default:  false,
   })
   emailVerified: boolean;
 
+  /**
+   * Email verification timestamp
+   */
   @Column({
     name: 'email_verified_at',
     type: 'timestamp with time zone',
@@ -39,6 +56,9 @@ export class User extends SoftDeletableEntity {
   })
   emailVerifiedAt: Date | null;
 
+  /**
+   * Phone number in E.164 format (required)
+   */
   @Column({
     name: 'phone_number',
     type: 'varchar',
@@ -47,6 +67,9 @@ export class User extends SoftDeletableEntity {
   })
   phoneNumber: string;
 
+  /**
+   * Whether phone is verified
+   */
   @Column({
     name: 'phone_verified',
     type: 'boolean',
@@ -54,13 +77,19 @@ export class User extends SoftDeletableEntity {
   })
   phoneVerified: boolean;
 
+  /**
+   * Phone verification timestamp
+   */
   @Column({
     name: 'phone_verified_at',
     type: 'timestamp with time zone',
-    nullable: true,
+    nullable:  true,
   })
   phoneVerifiedAt: Date | null;
 
+  /**
+   * Hashed password (bcrypt)
+   */
   @Column({
     name: 'password_hash',
     type: 'varchar',
@@ -68,21 +97,9 @@ export class User extends SoftDeletableEntity {
   })
   passwordHash: string;
 
-  @Column({
-    name: 'password_changed_at',
-    type: 'timestamp with time zone',
-    nullable: true,
-  })
-  passwordChangedAt: Date | null;
-
-  @Column({
-    name: 'pin_hash',
-    type: 'varchar',
-    length: 255,
-    nullable: true,
-  })
-  pinHash: string | null;
-
+  /**
+   * User type/role
+   */
   @Column({
     name: 'user_type',
     type: 'enum',
@@ -90,6 +107,9 @@ export class User extends SoftDeletableEntity {
   })
   userType: UserType;
 
+  /**
+   * Account status
+   */
   @Column({
     name: 'status',
     type: 'enum',
@@ -98,43 +118,149 @@ export class User extends SoftDeletableEntity {
   })
   status: UserStatus;
 
+  /**
+   * First name
+   */
   @Column({
-    name: 'mfa_enabled',
+    name: 'first_name',
+    type: 'varchar',
+    length: 100,
+  })
+  firstName: string;
+
+  /**
+   * Last name
+   */
+  @Column({
+    name: 'last_name',
+    type: 'varchar',
+    length: 100,
+  })
+  lastName: string;
+
+  /**
+   * Display name
+   */
+  @Column({
+    name: 'display_name',
+    type: 'varchar',
+    length: 200,
+    nullable: true,
+  })
+  displayName: string | null;
+
+  /**
+   * Profile photo URL
+   */
+  @Column({
+    name: 'profile_photo_url',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
+  profilePhotoUrl: string | null;
+
+  /**
+   * Preferred language (ISO 639-1 code)
+   */
+  @Column({
+    name: 'preferred_language',
+    type: 'varchar',
+    length: 10,
+    default: 'en',
+  })
+  preferredLanguage: string;
+
+  /**
+   * Timezone
+   */
+  @Column({
+    name: 'timezone',
+    type: 'varchar',
+    length: 50,
+    default: 'Africa/Johannesburg',
+  })
+  timezone: string;
+
+  // ==================== MFA FIELDS ====================
+
+  /**
+   * Whether MFA is enabled
+   */
+  @Column({
+    name:  'mfa_enabled',
     type: 'boolean',
     default: false,
   })
   mfaEnabled: boolean;
 
+  /**
+   * Preferred MFA method
+   */
   @Column({
-    name: 'mfa_method',
+    name:  'mfa_method',
     type: 'enum',
     enum: MfaMethod,
-    default:  MfaMethod.NONE,
-  })
-  mfaMethod: MfaMethod;
-
-  @Column({
-    name: 'mfa_secret',
-    type: 'varchar',
-    length: 255,
     nullable: true,
   })
-  mfaSecret: string | null;
+  mfaMethod: MfaMethod | null;
 
+  /**
+   * TOTP secret (encrypted)
+   */
   @Column({
-    name: 'failed_login_attempts',
+    name: 'totp_secret',
+    type:  'varchar',
+    length:  500,
+    nullable: true,
+  })
+  totpSecret: string | null;
+
+  /**
+   * MFA backup codes (encrypted JSON array)
+   */
+  @Column({
+    name: 'mfa_backup_codes',
+    type: 'text',
+    nullable: true,
+  })
+  mfaBackupCodes: string | null;
+
+  // ==================== SECURITY FIELDS ====================
+
+  /**
+   * Number of failed login attempts
+   */
+  @Column({
+    name:  'failed_login_attempts',
     type: 'smallint',
     default: 0,
   })
   failedLoginAttempts: number;
 
+  /**
+   * Account locked until timestamp
+   */
   @Column({
-    name:  'locked_until',
+    name: 'locked_until',
     type: 'timestamp with time zone',
-    nullable:  true,
+    nullable: true,
   })
   lockedUntil: Date | null;
 
+  /**
+   * Last failed login attempt
+   */
+  @Column({
+    name: 'last_failed_login_at',
+    type: 'timestamp with time zone',
+    nullable:  true,
+  })
+  lastFailedLoginAt: Date | null;
+
+  /**
+   * Last successful login
+   */
   @Column({
     name: 'last_login_at',
     type: 'timestamp with time zone',
@@ -142,6 +268,9 @@ export class User extends SoftDeletableEntity {
   })
   lastLoginAt: Date | null;
 
+  /**
+   * Last login IP address
+   */
   @Column({
     name: 'last_login_ip',
     type: 'varchar',
@@ -150,52 +279,207 @@ export class User extends SoftDeletableEntity {
   })
   lastLoginIp: string | null;
 
+  /**
+   * Last password change
+   */
   @Column({
-    name: 'profile_id',
-    type: 'uuid',
+    name: 'password_changed_at',
+    type: 'timestamp with time zone',
     nullable: true,
-    comment: 'Reference to patient/provider profile based on user_type',
   })
-  profileId: string | null;
+  passwordChangedAt: Date | null;
 
+  /**
+   * Password reset token (hashed)
+   */
+  @Column({
+    name: 'password_reset_token',
+    type: 'varchar',
+    length: 255,
+    nullable:  true,
+  })
+  passwordResetToken: string | null;
+
+  /**
+   * Password reset token expiry
+   */
+  @Column({
+    name: 'password_reset_expires',
+    type: 'timestamp with time zone',
+    nullable:  true,
+  })
+  passwordResetExpires: Date | null;
+
+  // ==================== BIOMETRIC FIELDS ====================
+
+  /**
+   * Whether biometric login is enabled
+   */
+  @Column({
+    name: 'biometric_enabled',
+    type: 'boolean',
+    default: false,
+  })
+  biometricEnabled: boolean;
+
+  /**
+   * Biometric public key (for WebAuthn)
+   */
+  @Column({
+    name:  'biometric_public_key',
+    type: 'text',
+    nullable: true,
+  })
+  biometricPublicKey: string | null;
+
+  // ==================== PIN FIELDS ====================
+
+  /**
+   * PIN hash (for quick access)
+   */
+  @Column({
+    name: 'pin_hash',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  pinHash: string | null;
+
+  /**
+   * PIN set timestamp
+   */
+  @Column({
+    name: 'pin_set_at',
+    type:  'timestamp with time zone',
+    nullable: true,
+  })
+  pinSetAt: Date | null;
+
+  // ==================== TERMS & CONSENT ====================
+
+  /**
+   * Terms of service accepted
+   */
+  @Column({
+    name: 'terms_accepted',
+    type: 'boolean',
+    default: false,
+  })
+  termsAccepted: boolean;
+
+  /**
+   * Terms accepted timestamp
+   */
+  @Column({
+    name: 'terms_accepted_at',
+    type: 'timestamp with time zone',
+    nullable: true,
+  })
+  termsAcceptedAt: Date | null;
+
+  /**
+   * Privacy policy accepted
+   */
+  @Column({
+    name: 'privacy_accepted',
+    type: 'boolean',
+    default: false,
+  })
+  privacyAccepted: boolean;
+
+  /**
+   * Privacy policy accepted timestamp
+   */
+  @Column({
+    name: 'privacy_accepted_at',
+    type: 'timestamp with time zone',
+    nullable: true,
+  })
+  privacyAcceptedAt: Date | null;
+
+  // ==================== METADATA ====================
+
+  /**
+   * Additional metadata
+   */
   @Column({
     name: 'metadata',
     type: 'jsonb',
-    nullable: true,
     default: {},
   })
   metadata: Record<string, unknown>;
 
-  // Relationships
+  // ==================== RELATIONSHIPS ====================
+
+  /**
+   * User sessions
+   */
   @OneToMany(() => Session, session => session.user)
   sessions: Session[];
 
+  /**
+   * Refresh tokens
+   */
   @OneToMany(() => RefreshToken, token => token.user)
   refreshTokens: RefreshToken[];
 
-  // Hooks
+  // ==================== HOOKS ====================
+
   @BeforeInsert()
   @BeforeUpdate()
-  normalizeEmail() {
+  normalizeData() {
     if (this.email) {
       this.email = this.email. toLowerCase().trim();
     }
+    if (this.firstName) {
+      this.firstName = this.firstName.trim();
+    }
+    if (this.lastName) {
+      this.lastName = this.lastName.trim();
+    }
+    if (! this.displayName && this.firstName && this.lastName) {
+      this.displayName = `${this.firstName} ${this.lastName}`;
+    }
   }
 
-  // Helper methods
+  // ==================== HELPER METHODS ====================
+
+  /**
+   * Get full name
+   */
+  getFullName(): string {
+    return `${this.firstName} ${this.lastName}`;
+  }
+
+  /**
+   * Check if account is locked
+   */
   isLocked(): boolean {
-    return this.lockedUntil !== null && this.lockedUntil > new Date();
+    if (! this.lockedUntil) return false;
+    return new Date() < this.lockedUntil;
   }
 
-  isVerified(): boolean {
-    return this.emailVerified || this.phoneVerified;
+  /**
+   * Check if account is active
+   */
+  isActive(): boolean {
+    return this.status === UserStatus. ACTIVE && !this.isLocked();
   }
 
-  canLogin(): boolean {
-    return (
-      this.status === UserStatus.ACTIVE &&
-      !this.isLocked() &&
-      this.isVerified()
-    );
+  /**
+   * Check if account requires verification
+   */
+  requiresVerification(): boolean {
+    return this.status === UserStatus. PENDING_VERIFICATION;
+  }
+
+  /**
+   * Check if password reset is valid
+   */
+  isPasswordResetValid(): boolean {
+    if (!this.passwordResetToken || !this.passwordResetExpires) {
+      return false;
+    }
+    return new Date() < this.passwordResetExpires;
   }
 }
