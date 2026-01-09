@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Databases
+  postgres-auth:
+    image: postgres:15-alpine
+    container_name: ithalamed-postgres-auth
+    environment:
+      POSTGRES_USER: ithalamed
+      POSTGRES_PASSWORD: ithalamed_dev_password
+      POSTGRES_DB: ithalamed_auth
+    ports:
+      - "5432:5432"
+    volumes: 
+      - postgres-auth-data:/var/lib/postgresql/data
+    healthcheck: 
+      test: ["CMD-SHELL", "pg_isready -U ithalamed -d ithalamed_auth"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-patients:
+    image:  postgres:15-alpine
+    container_name: ithalamed-postgres-patients
+    environment:
+      POSTGRES_USER: ithalamed
+      POSTGRES_PASSWORD: ithalamed_dev_password
+      POSTGRES_DB: ithalamed_patients
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-patients-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ithalamed -d ithalamed_patients"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-providers:
+    image: postgres:15-alpine
+    container_name: ithalamed-postgres-providers
+    environment: 
+      POSTGRES_USER: ithalamed
+      POSTGRES_PASSWORD: ithalamed_dev_password
+      POSTGRES_DB:  ithalamed_providers
+    ports: 
+      - "5434:5432"
+    volumes:
+      - postgres-providers-data:/var/lib/postgresql/data
+
+  postgres-appointments:
+    image:  postgres:15-alpine
+    container_name: ithalamed-postgres-appointments
+    environment:
+      POSTGRES_USER: ithalamed
+      POSTGRES_PASSWORD: ithalamed_dev_password
+      POSTGRES_DB: ithalamed_appointments
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres-appointments-data:/var/lib/postgresql/data
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: ithalamed-redis
+    command: redis-server --appendonly yes --requirepass ithalamed_redis_password
+    ports:
+      - "6379:6379"
+    volumes: 
+      - redis-data:/data
+    healthcheck: 
+      test: ["CMD", "redis-cli", "-a", "ithalamed_redis_password", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ
+  rabbitmq: 
+    image: rabbitmq:3-management-alpine
+    container_name: ithalamed-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ithalamed
+      RABBITMQ_DEFAULT_PASS: ithalamed_rabbitmq_password
+    ports: 
+      - "5672:5672"
+      - "15672:15672"
+    volumes: 
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck: 
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval:  30s
+      timeout:  10s
+      retries: 5
+
+  # MinIO (S3-compatible storage for development)
+  minio:
+    image:  minio/minio: latest
+    container_name: ithalamed-minio
+    command: server /data --console-address ": 9001"
+    environment:
+      MINIO_ROOT_USER: ithalamed
+      MINIO_ROOT_PASSWORD:  ithalamed_minio_password
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+volumes:
+  postgres-auth-data: 
+  postgres-patients-data:
+  postgres-providers-data: 
+  postgres-appointments-data: 
+  redis-data:
+  rabbitmq-data: 
+  minio-data: 
+
+networks:
+  default:
+    name: ithalamed-network
