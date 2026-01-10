@@ -7,7 +7,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { BaseError } from '@ithalamed/common';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -18,67 +17,51 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    let status:  number;
-    let message: string;
-    let code: string;
-    let errors: unknown;
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message = 'Internal server error';
+    let errors:  string[] = [];
 
-    if (exception instanceof BaseError) {
-      // Custom application errors
-      status = exception.statusCode;
-      message = exception. message;
-      code = exception. code;
-      errors = exception. details;
-    } else if (exception instanceof HttpException) {
-      // NestJS HTTP exceptions
+    if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      
-      if (typeof exceptionResponse === 'object') {
+
+      if (typeof exceptionResponse === 'string') {
+        message = exceptionResponse;
+      } else if (typeof exceptionResponse === 'object') {
         const responseObj = exceptionResponse as Record<string, unknown>;
-        message = (responseObj. message as string) || exception.message;
-        errors = responseObj.errors;
-      } else {
-        message = exceptionResponse as string;
+        message = (responseObj. message as string) || message;
+        
+        if (Array.isArray(responseObj.message)) {
+          errors = responseObj.message;
+          message = 'Validation failed';
+        }
       }
-      code = `HTTP_${status}`;
     } else if (exception instanceof Error) {
-      // Generic errors
-      status = HttpStatus.INTERNAL_SERVER_ERROR;
-      message = 'An unexpected error occurred';
-      code = 'INTERNAL_ERROR';
-      
-      // Log the actual error
-      this.logger.error(
-        `Unhandled exception:  ${exception.message}`,
-        exception.stack,
-      );
-    } else {
-      status = HttpStatus.INTERNAL_SERVER_ERROR;
-      message = 'An unexpected error occurred';
-      code = 'INTERNAL_ERROR';
+      message = exception.message;
+      this.logger.error(`Unhandled error: ${exception. message}`, exception.stack);
     }
 
     const errorResponse = {
       success: false,
-      error: {
-        code,
-        message,
-        statusCode: status,
-        errors,
-      },
-      meta: {
-        requestId: request.headers['x-request-id'] || this.generateRequestId(),
-        timestamp: new Date().toISOString(),
-        path: request.url,
-        method: request.method,
-      },
+      statusCode: status,
+      message,
+      errors:  errors. length > 0 ? errors : undefined,
+      timestamp: new Date().toISOString(),
+      path: request.url,
+      requestId: request.headers['x-request-id'] || undefined,
     };
 
-    response. status(status).json(errorResponse);
-  }
+    // Log error details
+    this.logger.error(
+      `${request.method} ${request.url} - ${status} - ${message}`,
+      {
+        body: request.body,
+        params: request.params,
+        query: request.query,
+        user: (request as any).user?.id,
+      },
+    );
 
-  private generateRequestId(): string {
-    return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    response.status(status).json(errorResponse);
   }
 }
