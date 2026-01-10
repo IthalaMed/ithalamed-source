@@ -2,28 +2,30 @@ import {
   Controller,
   Post,
   Body,
-  HttpCode,
-  HttpStatus,
   UseGuards,
   Req,
+  HttpCode,
+  HttpStatus,
   Get,
-  Delete,
-  Headers,
-  Ip,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiBody,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { Request } from 'express';
-import { Throttle } from '@nestjs/throttler';
 
-import { AuthService } from './auth.service';
-import { Public, CurrentUser, CurrentUserData } from '../../shared/decorators';
-import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
+// Import from centralized common package
+import {
+  JwtAuthGuard,
+  RolesGuard,
+  CurrentUser,
+  Public,
+  Roles,
+  AuthenticatedUser,
+  UserType,
+} from '@ithalamed/common';
+
+// Import from database package
+import { User } from '@ithalamed/database';
+
 
 // DTOs
 import { RegisterDto } from './dto/register.dto';
@@ -42,19 +44,41 @@ import { MessageResponseDto } from './dto/responses/message-response.dto';
 
 @ApiTags('auth')
 @Controller('auth')
+@UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  /**
-   * Register a new user account
-   * Implements FR-PAT-001, FR-PAT-002
-   */
+  @Public() // From @ithalamed/common
   @Post('register')
+  @ApiOperation({ summary: 'Register new user' })
+  async register(
+    @Body() dto: RegisterDto,
+    @Req() req: Request,
+  ) {
+    return this.authService.register(dto, req. ip, req.headers['user-agent'] as string);
+  }
+
   @Public()
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ 
-    summary: 'Register new user',
-    description: 'Create a new user account.  Requires email/phone verification after registration.',
-  })
-  @ApiBody({
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() dto: LoginDto, @Req() req: Request) {
+    return this.authService.login(dto, req.ip, req.headers['user-agent'] as string);
+  }
+
+  @UseGuards(JwtAuthGuard) // From @ithalamed/common
+  @Get('me')
+  @ApiBearerAuth()
+  async getCurrentUser(
+    @CurrentUser() user: AuthenticatedUser, // From @ithalamed/common
+  ) {
+    return this.authService.getUser(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard) // From @ithalamed/common
+  @Roles(UserType. ADMIN) // From @ithalamed/common
+  @Get('admin-only')
+  @ApiBearerAuth()
+  async adminOnly(@CurrentUser() user: AuthenticatedUser) {
+    return { message: 'Admin access granted', userId: user.id };
+  }
+}
