@@ -5,7 +5,7 @@ export * from './emergency-contact.type';
 export * from './pagination.type';
 export * from './api-response.type';
 export * from './device-info.type';
-export * from './jwt-payload.type';
+export * from './auth.types';
 
 // Clinical types
 export * from './vital-signs.type';
