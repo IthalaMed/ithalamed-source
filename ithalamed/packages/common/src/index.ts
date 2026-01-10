@@ -22,3 +22,18 @@ export * from './errors';
 
 // Export all constants
 export * from './constants';
+// ==================== NESTJS COMPONENTS ====================
+// Filters
+export * from './nestjs/filters';
+
+// Interceptors
+export * from './nestjs/interceptors';
+
+// Guards
+export * from './nestjs/guards';
+
+// Decorators
+export * from './nestjs/decorators';
+
+// Strategies
+export * from './nestjs/strategies';
