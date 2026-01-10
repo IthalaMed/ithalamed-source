@@ -1,36 +1,38 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
-import { TransformInterceptor } from './shared/interceptors/transform.interceptor';
-import { LoggingInterceptor } from './shared/interceptors/logging.interceptor';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
-  const logger = new Logger('AuthService');
-  
-  const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
-  });
-
+  const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT', 4001);
-  const nodeEnv = configService.get<string>('NODE_ENV', 'development');
 
   // Security
   app.use(helmet());
-  
+
   // CORS
+  const corsOrigins = configService.get<string>('CORS_ORIGINS')?.split(',') || ['http://localhost:3000'];
   app.enableCors({
-    origin: configService.get<string>('CORS_ORIGINS', '*').split(','),
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    origin: corsOrigins,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Device-ID'],
   });
 
   // Global prefix
-  app.setGlobalPrefix('api/v1');
+  const apiPrefix = configService.get<string>('API_PREFIX') || 'api/v1';
+  app.setGlobalPrefix(apiPrefix);
+
+  // Versioning
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+  });
 
   // Global pipes
   app.useGlobalPipes(
@@ -49,13 +51,13 @@ async function bootstrap() {
 
   // Global interceptors
   app.useGlobalInterceptors(
-    new TransformInterceptor(),
     new LoggingInterceptor(),
+    new TransformInterceptor(),
   );
 
   // Swagger documentation
-  if (nodeEnv !== 'production') {
-    const swaggerConfig = new DocumentBuilder()
+  if (configService.get<string>('NODE_ENV') !== 'production') {
+    const config = new DocumentBuilder()
       .setTitle('IthalaMed Auth Service')
       .setDescription('Authentication and Authorization API for IthalaMed Platform')
       .setVersion('1.0')
@@ -64,7 +66,7 @@ async function bootstrap() {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
-          name: 'Authorization',
+          name: 'JWT',
           description: 'Enter JWT token',
           in: 'header',
         },
@@ -73,18 +75,20 @@ async function bootstrap() {
       .addTag('auth', 'Authentication endpoints')
       .addTag('users', 'User management endpoints')
       .addTag('sessions', 'Session management endpoints')
-      .addTag('mfa', 'Multi-factor authentication endpoints')
+      .addTag('otp', 'OTP management endpoints')
+      .addTag('health', 'Health check endpoints')
       .build();
 
-    const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup('api/docs', app, document);
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule. setup('docs', app, document);
   }
 
+  // Start server
+  const port = configService.get<number>('PORT') || 3001;
   await app.listen(port);
-  
-  logger.log(`🚀 Auth Service running on port ${port}`);
-  logger.log(`📚 Swagger documentation:  http://localhost:${port}/api/docs`);
-  logger.log(`🌍 Environment: ${nodeEnv}`);
+
+  console.log(`🚀 Auth Service is running on:  http://localhost:${port}/${apiPrefix}`);
+  console.log(`📚 Swagger docs available at: http://localhost:${port}/docs`);
 }
 
 bootstrap();
