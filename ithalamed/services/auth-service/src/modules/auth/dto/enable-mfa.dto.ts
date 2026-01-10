@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, Length } from 'class-validator';
+import { IsString, IsEnum, IsOptional, Length, IsBoolean } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MfaMethod } from '@ithalamed/common';
 
@@ -11,26 +11,28 @@ export class EnableMfaDto {
     enum: MfaMethod,
     example: MfaMethod. TOTP,
   })
-  @IsEnum(MfaMethod)
+  @IsEnum(MfaMethod, { message: 'Invalid MFA method' })
   method: MfaMethod;
 
   @ApiProperty({
-    description: 'Current password (required for enabling MFA)',
+    description: 'Current password (required for security)',
   })
   @IsString()
   password: string;
 }
 
 /**
- * Verify MFA Setup DTO
+ * Verify MFA Setup DTO (confirm TOTP setup)
  */
 export class VerifyMfaSetupDto {
   @ApiProperty({
     description: 'TOTP code from authenticator app',
     example: '123456',
+    minLength: 6,
+    maxLength: 6,
   })
   @IsString()
-  @Length(6, 6)
+  @Length(6, 6, { message: 'Code must be exactly 6 digits' })
   code: string;
 }
 
@@ -39,23 +41,24 @@ export class VerifyMfaSetupDto {
  */
 export class VerifyMfaDto {
   @ApiProperty({
-    description: 'MFA session token (from initial login)',
+    description: 'MFA session token (received from initial login)',
   })
   @IsString()
   mfaToken: string;
 
   @ApiProperty({
-    description: 'TOTP code or backup code',
+    description:  'TOTP code or backup code',
     example: '123456',
   })
   @IsString()
   code: string;
 
   @ApiPropertyOptional({
-    description: 'Whether using backup code instead of TOTP',
+    description: 'Set to true if using a backup code',
     default: false,
   })
   @IsOptional()
+  @IsBoolean()
   isBackupCode?: boolean;
 }
 
@@ -74,6 +77,6 @@ export class DisableMfaDto {
     example: '123456',
   })
   @IsString()
-  @Length(6, 6)
+  @Length(6, 6, { message: 'Code must be exactly 6 digits' })
   code: string;
 }
