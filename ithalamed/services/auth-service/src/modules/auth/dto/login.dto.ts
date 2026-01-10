@@ -3,32 +3,34 @@ import {
   IsOptional,
   IsBoolean,
   ValidateNested,
+  IsUUID,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { DeviceInfoDto } from './register.dto';
 
 /**
- * Login DTO
+ * Login with email/phone and password DTO
  * Implements FR-PAT-001 (Multi-method authentication)
  */
 export class LoginDto {
   @ApiProperty({
-    description: 'Email or phone number',
+    description: 'Email address or phone number',
     example: '+27821234567',
   })
-  @IsString()
+  @IsString({ message: 'Identifier is required' })
   identifier: string;
 
   @ApiProperty({
     description: 'Password',
     example: 'SecureP@ss123',
   })
-  @IsString()
+  @IsString({ message: 'Password is required' })
   password: string;
 
   @ApiPropertyOptional({
-    description: 'Remember me (extends token expiry)',
+    description: 'Remember this device (extends session)',
     default: false,
   })
   @IsOptional()
@@ -36,8 +38,8 @@ export class LoginDto {
   rememberMe?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Device information',
-    type:  DeviceInfoDto,
+    description: 'Device information for session tracking',
+    type: DeviceInfoDto,
   })
   @IsOptional()
   @ValidateNested()
@@ -53,7 +55,7 @@ export class LoginWithPinDto {
     description: 'User ID',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
-  @IsString()
+  @IsUUID('4', { message: 'Invalid user ID format' })
   userId: string;
 
   @ApiProperty({
@@ -61,6 +63,7 @@ export class LoginWithPinDto {
     example:  '1234',
   })
   @IsString()
+  @Matches(/^\d{4,6}$/, { message: 'PIN must be 4-6 digits' })
   pin: string;
 
   @ApiPropertyOptional({
@@ -81,11 +84,11 @@ export class LoginWithBiometricDto {
     description: 'User ID',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
-  @IsString()
+  @IsUUID('4', { message: 'Invalid user ID format' })
   userId: string;
 
   @ApiProperty({
-    description: 'Biometric signature/token',
+    description: 'Biometric authentication token/signature',
   })
   @IsString()
   biometricToken: string;
