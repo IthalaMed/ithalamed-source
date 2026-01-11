@@ -1,15 +1,14 @@
-// ==================== RE-EXPORT ALL SHARED TYPES ====================
-// Mobile apps can import types from @ithalamed/mobile-core
+// Re-export all shared types (single source of truth)
 export * from '@ithalamed/shared-types';
 
-// ==================== CONFIG ====================
+// Config
 export * from './config';
 
-// ==================== SERVICES ====================
+// Services
 export * from './services';
 
-// ==================== STORE ====================
+// Store
 export * from './store';
 
-// ==================== UTILS ====================
+// Utils
 export * from './utils';
