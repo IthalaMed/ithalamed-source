@@ -1,0 +1,53 @@
+import {
+  IsString,
+  IsEnum,
+  IsOptional,
+  IsDateString,
+  IsBoolean,
+  MaxLength,
+} from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+
+import { ChronicConditionStatus, ChronicConditionSeverity } from '@ithalamed/common';
+
+/**
+ * Update Chronic Condition DTO
+ */
+export class UpdateChronicConditionDto {
+  @ApiPropertyOptional({ enum: ChronicConditionStatus })
+  @IsOptional()
+  @IsEnum(ChronicConditionStatus)
+  status?: ChronicConditionStatus;
+
+  @ApiPropertyOptional({ enum: ChronicConditionSeverity })
+  @IsOptional()
+  @IsEnum(ChronicConditionSeverity)
+  severity?: ChronicConditionSeverity;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  diagnosisDate?: string;
+
+  @ApiPropertyOptional({ maxLength: 1000 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  notes?: string;
+
+  @ApiPropertyOptional({ maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  currentTreatment?: string;
+
+  @ApiPropertyOptional({ description: 'Date condition was resolved' })
+  @IsOptional()
+  @IsDateString()
+  resolutionDate?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
