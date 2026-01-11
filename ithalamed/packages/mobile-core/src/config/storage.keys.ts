@@ -1,0 +1,18 @@
+export const STORAGE_KEYS = {
+  ACCESS_TOKEN: 'ithalamed_access_token',
+  REFRESH_TOKEN: 'ithalamed_refresh_token',
+  USER_ID: 'ithalamed_user_id',
+  SESSION_ID: 'ithalamed_session_id',
+  PIN_ENABLED: 'ithalamed_pin_enabled',
+  PIN_HASH: 'ithalamed_pin_hash',
+  BIOMETRIC_ENABLED: 'ithalamed_biometric_enabled',
+  BIOMETRIC_KEY: 'ithalamed_biometric_key',
+  USER_PREFERENCES: 'ithalamed_user_preferences',
+  LANGUAGE: 'ithalamed_language',
+  THEME: 'ithalamed_theme',
+  NOTIFICATIONS_ENABLED: 'ithalamed_notifications_enabled',
+  CACHED_USER:  'ithalamed_cached_user',
+  CACHED_PATIENT: 'ithalamed_cached_patient',
+  LAST_SYNC: 'ithalamed_last_sync',
+  ONBOARDING_COMPLETED: 'ithalamed_onboarding_completed',
+};
